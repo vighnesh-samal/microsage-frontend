@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 // ─────────────────────────────────────────────
 // API — Replace with your deployed backend URL
 // ─────────────────────────────────────────────
-const BASE_URL = "https://your-microsage-backend.onrender.com";
+const BASE_URL = "https://microsage-backend.onrender.com";
 
 async function fetchSymptoms(site) {
   try {
