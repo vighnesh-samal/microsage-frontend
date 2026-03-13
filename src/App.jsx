@@ -319,41 +319,13 @@ const S = `
 `;
 
 // ─────────────────────────────────────────────
-// APP
+// FEEDBACK MODAL — outside main component to prevent re-render focus loss
 // ─────────────────────────────────────────────
-export default function MicroSage() {
-  const [screen,   setScreen]   = useState("landing");
-  const [results,  setResults]  = useState(null);
-  const [note,     setNote]     = useState("");
-  const [error,    setError]    = useState("");
-  const [expanded, setExpanded] = useState(0);
-  const [symptoms, setSymptoms] = useState([]);
-  const [fbOpen,   setFbOpen]   = useState(false);
-  const [fbRating, setFbRating] = useState(0);
-  const [fbComment,setFbComment]= useState("");
-  const [fbDone,   setFbDone]   = useState(false);
-  const [fbLoading,setFbLoading]= useState(false);
+const RATINGS = [1,1.5,2,2.5,3,3.5,4,4.5,5];
 
-  const RATINGS = [1,1.5,2,2.5,3,3.5,4,4.5,5];
-
-  const submitFeedback = async () => {
-    if (!fbRating) return;
-    setFbLoading(true);
-    try {
-      await fetch(`${BASE_URL}/feedback`, {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({rating:fbRating, comment:fbComment})
-      });
-      setFbDone(true);
-      setTimeout(() => { setFbOpen(false); setFbDone(false); setFbRating(0); setFbComment(""); }, 2500);
-    } catch(e) {
-      alert("Could not submit feedback. Please try again.");
-    }
-    setFbLoading(false);
-  };
-
-  const FeedbackModal = () => fbOpen ? (
+function FeedbackModal({ fbOpen, setFbOpen, fbRating, setFbRating, fbComment, setFbComment, fbDone, fbLoading, submitFeedback }) {
+  if (!fbOpen) return null;
+  return (
     <div className="fb-overlay" onClick={e => { if(e.target.className==="fb-overlay") setFbOpen(false); }}>
       <div className="fb-sheet">
         {fbDone ? (
@@ -382,7 +354,41 @@ export default function MicroSage() {
         )}
       </div>
     </div>
-  ) : null;
+  );
+}
+
+// ─────────────────────────────────────────────
+// APP
+// ─────────────────────────────────────────────
+export default function MicroSage() {
+  const [screen,   setScreen]   = useState("landing");
+  const [results,  setResults]  = useState(null);
+  const [note,     setNote]     = useState("");
+  const [error,    setError]    = useState("");
+  const [expanded, setExpanded] = useState(0);
+  const [symptoms, setSymptoms] = useState([]);
+  const [fbOpen,   setFbOpen]   = useState(false);
+  const [fbRating, setFbRating] = useState(0);
+  const [fbComment,setFbComment]= useState("");
+  const [fbDone,   setFbDone]   = useState(false);
+  const [fbLoading,setFbLoading]= useState(false);
+
+  const submitFeedback = async () => {
+    if (!fbRating) return;
+    setFbLoading(true);
+    try {
+      await fetch(`${BASE_URL}/feedback`, {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({rating:fbRating, comment:fbComment})
+      });
+      setFbDone(true);
+      setTimeout(() => { setFbOpen(false); setFbDone(false); setFbRating(0); setFbComment(""); }, 2500);
+    } catch(e) {
+      alert("Could not submit feedback. Please try again.");
+    }
+    setFbLoading(false);
+  };
 
   const [gram,     setGram]     = useState("");
   const [shape,    setShape]    = useState("");
@@ -429,7 +435,7 @@ export default function MicroSage() {
     <>
       <style>{S}</style>
       <div className="glow" />
-      <FeedbackModal />
+      <FeedbackModal fbOpen={fbOpen} setFbOpen={setFbOpen} fbRating={fbRating} setFbRating={setFbRating} fbComment={fbComment} setFbComment={setFbComment} fbDone={fbDone} fbLoading={fbLoading} submitFeedback={submitFeedback} />
       <div className="wrap">
 
         {/* ── LANDING ── */}
