@@ -293,6 +293,29 @@ const S = `
 
   .foot { text-align:center; padding:22px 20px 10px; font-size:11px; color:var(--faint); line-height:1.8; position:relative; z-index:1; }
   .foot strong { color:var(--gold-lt); }
+
+  /* FEEDBACK */
+  .fb-btn { display:flex; align-items:center; justify-content:center; gap:7px; width:100%; background:transparent; border:1px solid var(--bdr); color:var(--gold); font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; padding:13px; border-radius:var(--r); cursor:pointer; transition:all .25s; margin-top:10px; }
+  .fb-btn:hover { background:rgba(200,169,110,.07); }
+  .fb-overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:200; display:flex; align-items:flex-end; justify-content:center; animation:fadein .2s ease; }
+  @keyframes fadein { from{opacity:0} to{opacity:1} }
+  .fb-sheet { background:var(--s1); border-radius:24px 24px 0 0; padding:28px 22px 40px; width:100%; max-width:460px; border-top:1px solid var(--bdr); animation:slideup .3s ease; }
+  @keyframes slideup { from{transform:translateY(100%)} to{transform:translateY(0)} }
+  .fb-title { font-family:'Playfair Display',serif; font-size:20px; font-weight:700; margin-bottom:4px; }
+  .fb-sub { font-size:12px; color:var(--dim); margin-bottom:22px; }
+  .stars { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:18px; }
+  .star-btn { background:var(--s2); border:1.5px solid var(--bdr-d); border-radius:8px; padding:8px 10px; font-size:12px; font-weight:600; color:var(--dim); cursor:pointer; font-family:'DM Mono',monospace; transition:all .15s; }
+  .star-btn.sel { background:rgba(200,169,110,.15); border-color:var(--gold); color:var(--gold); }
+  .fb-textarea { width:100%; background:var(--s2); border:1.5px solid var(--bdr-d); border-radius:var(--rsm); padding:13px; font-family:'DM Sans',sans-serif; font-size:13px; color:var(--white); resize:none; height:100px; margin-bottom:14px; outline:none; transition:border .2s; }
+  .fb-textarea:focus { border-color:var(--gold); }
+  .fb-textarea::placeholder { color:var(--faint); }
+  .fb-submit { width:100%; background:linear-gradient(135deg,var(--gold),#b8923e); color:#07111f; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:700; padding:16px; border-radius:var(--r); border:none; cursor:pointer; transition:all .25s; }
+  .fb-submit:disabled { opacity:.45; cursor:not-allowed; }
+  .fb-cancel { width:100%; background:transparent; border:none; color:var(--dim); font-family:'DM Sans',sans-serif; font-size:13px; padding:12px; cursor:pointer; margin-top:4px; }
+  .fb-success { text-align:center; padding:20px 0; }
+  .fb-success-icon { font-size:44px; margin-bottom:12px; }
+  .fb-success-txt { font-family:'Playfair Display',serif; font-size:18px; font-weight:700; margin-bottom:6px; }
+  .fb-success-sub { font-size:13px; color:var(--dim); }
 `;
 
 // ─────────────────────────────────────────────
@@ -305,6 +328,61 @@ export default function MicroSage() {
   const [error,    setError]    = useState("");
   const [expanded, setExpanded] = useState(0);
   const [symptoms, setSymptoms] = useState([]);
+  const [fbOpen,   setFbOpen]   = useState(false);
+  const [fbRating, setFbRating] = useState(0);
+  const [fbComment,setFbComment]= useState("");
+  const [fbDone,   setFbDone]   = useState(false);
+  const [fbLoading,setFbLoading]= useState(false);
+
+  const RATINGS = [1,1.5,2,2.5,3,3.5,4,4.5,5];
+
+  const submitFeedback = async () => {
+    if (!fbRating) return;
+    setFbLoading(true);
+    try {
+      await fetch(`${BASE_URL}/feedback`, {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({rating:fbRating, comment:fbComment})
+      });
+      setFbDone(true);
+      setTimeout(() => { setFbOpen(false); setFbDone(false); setFbRating(0); setFbComment(""); }, 2500);
+    } catch(e) {
+      alert("Could not submit feedback. Please try again.");
+    }
+    setFbLoading(false);
+  };
+
+  const FeedbackModal = () => fbOpen ? (
+    <div className="fb-overlay" onClick={e => { if(e.target.className==="fb-overlay") setFbOpen(false); }}>
+      <div className="fb-sheet">
+        {fbDone ? (
+          <div className="fb-success">
+            <div className="fb-success-icon">🙏</div>
+            <div className="fb-success-txt">Thank you, Vighnesh will read this!</div>
+            <div className="fb-success-sub">Your feedback helps MicroSage improve.</div>
+          </div>
+        ) : (
+          <>
+            <div className="fb-title">Rate MicroSage</div>
+            <div className="fb-sub">Your honest feedback helps improve the tool for everyone.</div>
+            <div className="stars">
+              {RATINGS.map(r => (
+                <button key={r} className={`star-btn ${fbRating===r?"sel":""}`} onClick={() => setFbRating(r)}>
+                  {"⭐".repeat(Math.floor(r))}{r%1?"+":""} {r}
+                </button>
+              ))}
+            </div>
+            <textarea className="fb-textarea" placeholder="What did you like? What should we improve? (optional)" value={fbComment} onChange={e => setFbComment(e.target.value)} />
+            <button className="fb-submit" onClick={submitFeedback} disabled={!fbRating || fbLoading}>
+              {fbLoading ? "Submitting..." : "Submit Feedback"}
+            </button>
+            <button className="fb-cancel" onClick={() => setFbOpen(false)}>Cancel</button>
+          </>
+        )}
+      </div>
+    </div>
+  ) : null;
 
   const [gram,     setGram]     = useState("");
   const [shape,    setShape]    = useState("");
@@ -351,6 +429,7 @@ export default function MicroSage() {
     <>
       <style>{S}</style>
       <div className="glow" />
+      <FeedbackModal />
       <div className="wrap">
 
         {/* ── LANDING ── */}
@@ -394,6 +473,7 @@ export default function MicroSage() {
               Laboratory confirmation is always required.<br />
               Built by <strong>Vighnesh.S.Samal</strong> · Jawetz · Murray · CLSI · EUCAST
             </div>
+            <button className="fb-btn" onClick={() => setFbOpen(true)}>💬 Give Feedback</button>
           </div>
         )}
 
@@ -674,6 +754,7 @@ export default function MicroSage() {
               })}
 
               <button className="new-btn" onClick={reset}>🔬 New Analysis</button>
+              <button className="fb-btn" onClick={() => setFbOpen(true)}>💬 Give Feedback</button>
 
               <div className="foot">
                 For educational &amp; decision-support purposes only.<br />
